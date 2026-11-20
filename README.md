@@ -39,4 +39,12 @@ The original has 27,800 rows, 58 columns, and 27,800 unique anonymous IDs. The a
 
 Height is missing in 427 of 20,484 recovered health-centre cases and 4,108 of 4,201 recovered ASC cases. Replacing the constant site field with `adm_whz06` reduces complete rows from 20,057 to 20,002. Height and z-score are the only candidate fields with missing values, at 427 and 482 respectively. Oedema is recorded in 18 cases. The smallest referral group, Other, has 608.
 
-Of the 20,484 eligible records, 590 have an inpatient transfer flag. Of the 20,002 complete rows, 566 have that flag, leaving 19,436 if transfers are excluded. The audit keeps transfers visible while the cohort definition is provisional. For modeling, compare the same rows and splits with and without z-score. Confirm that coordinators can provide it at admission before making it a required input. Review transfers against the outpatient planning use case before freezing the cohort.
+### Inpatient transfers
+
+The study followed cases that transferred to inpatient care until programme discharge. Median recorded duration was 70 days for the 590 recovered health-centre cases with a transfer and 35 days for the 19,894 without one. Both groups belong in the primary cohort because the estimate covers elapsed time through recovered discharge. Keep the transfer flag out of the inputs because it is recorded during treatment. Report errors by transfer status as a sensitivity check. Elapsed days alone cannot tell the coordinator how many outpatient visits to staff. [Companion study, section 2.6](https://www.mdpi.com/2072-6643/14/22/4923)
+
+Of the 20,002 complete rows, 566 had a transfer flag, leaving 19,436 in the subgroup without transfers.
+
+### Weight-for-height z-score
+
+Compare models with and without z-score on the same rows and splits. Confirm that coordinators can provide it at admission before making it a required input.
