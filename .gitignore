@@ -1,0 +1,5 @@
+.venv/
+__pycache__/
+.ipynb_checkpoints/
+/summative/data/
+Mali_Cohort_Study.csv
