@@ -69,11 +69,14 @@ app = FastAPI(
 )
 
 
-# Permit the local browser demo on its fixed port. Other websites cannot
-# make readable cross-origin calls. Swagger is served by the API itself.
+# Permit browser requests from the local demo and the deployed service origin.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:7357", "http://127.0.0.1:7357"],
+    allow_origins=[
+        "http://localhost:7357",
+        "http://127.0.0.1:7357",
+        "https://nara-follow-up-api.onrender.com",
+    ],
     allow_methods=["POST"],
     allow_headers=["Content-Type"],
     allow_credentials=False,
