@@ -1,17 +1,21 @@
 """Serve the fitted Nara recovery-duration model."""
 
+import csv
 from collections.abc import Mapping
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Literal
 
 import pandas as pd
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from joblib import load
 from pydantic import BaseModel, ConfigDict, Field
 
+from retrain import MAX_UPLOAD_BYTES, ModelStore, read_labelled_rows
+
 MODEL_PATH = Path(__file__).with_name("best_model.pkl")
+TRAINING_PATH = MODEL_PATH.with_name("training_rows.csv.gz")
 
 
 class Admission(BaseModel):
@@ -42,7 +46,7 @@ def predict_one(pipeline, admission: Mapping[str, object]) -> float:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    app.state.model = load(MODEL_PATH)
+    app.state.store = ModelStore(load(MODEL_PATH), pd.read_csv(TRAINING_PATH))
     yield
 
 
@@ -66,4 +70,18 @@ app.add_middleware(
 
 @app.post("/predict", response_model=Prediction)
 def predict(admission: Admission, request: Request) -> Prediction:
-    return Prediction(predicted_days=predict_one(request.app.state.model, admission.model_dump()))
+    return Prediction(predicted_days=predict_one(request.app.state.store.model, admission.model_dump()))
+
+
+@app.post("/retrain")
+def retrain(file: UploadFile, request: Request) -> dict[str, int]:
+    content = file.file.read(MAX_UPLOAD_BYTES + 1)
+    if len(content) > MAX_UPLOAD_BYTES:
+        raise HTTPException(status_code=413, detail="CSV must be 2 MiB or smaller.")
+    try:
+        rows = read_labelled_rows(content, Admission)
+    except (ValueError, csv.Error) as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
+
+    total = request.app.state.store.update(rows)
+    return {"uploaded_rows": len(rows), "training_rows": total}
