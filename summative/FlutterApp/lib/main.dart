@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'prediction_client.dart';
+
 void main() => runApp(const NaraApp());
 
 class NaraApp extends StatelessWidget {
@@ -53,6 +55,7 @@ class _PredictionPageState extends State<PredictionPage> {
   };
   String _message = 'Enter admission details to get an estimate.';
   bool _hasError = false;
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -89,20 +92,39 @@ class _PredictionPageState extends State<PredictionPage> {
     return admission;
   }
 
-  void _predict() {
+  Future<void> _predict() async {
     FocusScope.of(context).unfocus();
+    setState(() {
+      _isLoading = true;
+      _hasError = false;
+      _message = 'Getting an estimate…';
+    });
+
     try {
-      _readAdmission();
-      setState(() {
-        _hasError = false;
-        _message = 'Admission details ready.';
-      });
+      final days = await requestPrediction(_readAdmission());
+      _showMessage(
+        'Estimated time to recovered discharge: ${days.toStringAsFixed(1)} days.',
+      );
     } on FormatException catch (error) {
-      setState(() {
-        _hasError = true;
-        _message = error.message;
-      });
+      _showMessage(error.message, isError: true);
+    } on PredictionRequestException catch (error) {
+      final label = {
+        for (final field in admissionFields) field.key: field.label,
+      }[error.field];
+      _showMessage(
+        label == null ? error.message : '$label: ${error.message}',
+        isError: true,
+      );
     }
+  }
+
+  void _showMessage(String message, {bool isError = false}) {
+    if (!mounted) return;
+    setState(() {
+      _isLoading = false;
+      _hasError = isError;
+      _message = message;
+    });
   }
 
   @override
@@ -145,7 +167,10 @@ class _PredictionPageState extends State<PredictionPage> {
                       ),
                     ),
                   ),
-                FilledButton(onPressed: _predict, child: const Text('Predict')),
+                FilledButton(
+                  onPressed: _isLoading ? null : _predict,
+                  child: const Text('Predict'),
+                ),
                 const SizedBox(height: 12),
                 Semantics(
                   liveRegion: true,
