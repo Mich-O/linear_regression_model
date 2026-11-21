@@ -10,7 +10,7 @@ Data by Suvi T. Kangas, Bethany Marron, Zachary Tausanovitch, Elizabeth Radin, J
 
 ## Swagger UI
 
-Pending Render deployment.
+[Open the public Swagger UI](https://nara-follow-up-api.onrender.com/docs) to try prediction and CSV retraining.
 
 ## YouTube demo
 
@@ -18,7 +18,33 @@ Pending recording and upload.
 
 ## Run the mobile app
 
-Instructions will be added with the Flutter app and public API.
+1. Install Flutter and the Android toolchain. Run `flutter doctor` to check the Android setup.
+2. Enable USB debugging on the phone, connect it, and accept the debugging prompt.
+3. From the repository root, open a terminal on the same system as your Flutter and Android SDKs. On Windows, build from a Windows folder. If your checkout is inside WSL, copy `summative/FlutterApp` to a Windows folder and run the Flutter commands there.
+
+   ```sh
+   cd summative/FlutterApp
+   flutter pub get
+   flutter devices
+   flutter run -d <device-id>
+   ```
+
+   In a standalone copy, start inside `FlutterApp` and skip the first command. Replace `<device-id>` with the ID printed for your Android phone.
+
+4. Enter the sample values below and tap **Predict**. Expect about **40.9 days** with the original model. Change age to **90** and tap **Predict** again to check that the app shows a readable validation error.
+
+| Label in the Android app | Key in Swagger | Sample value |
+| --- | --- | --- |
+| Age (months) | `adm_age` | `18` |
+| Weight (kg) | `adm_kg` | `7.2` |
+| Height or length (cm) | `adm_cm` | `73` |
+| Mid-upper arm circumference (mm) | `adm_muac` | `115` |
+| Weight-for-height z-score (optional) | `adm_whz06` | Leave blank in the app. Use `null` in Swagger. |
+| Sex | `adm_sex` | `Female` |
+| Oedema (0 = no, 1 = yes) | `adm_oedema_YN` | `0` |
+| Referral source | `adm_referral` | `Family MUAC` |
+
+Enter just the values on the phone. In Swagger, enter the keys and values as a JSON object. Verified on a physical Android 12 phone with a valid prediction and an out-of-range age.
 
 ## Reproduce the cohort audit
 
