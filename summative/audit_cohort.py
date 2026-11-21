@@ -14,6 +14,11 @@ SHARED_FEATURES = (
 )
 # Both feature sets use these seven fields. Site is fixed by the cohort filter.
 REVISED_FEATURES = (*SHARED_FEATURES, "adm_whz06")
+Z_SCORE_BOUNDS = {
+    "adm_whz06": (-5, 5),
+    "adm_waz06": (-6, 5),
+    "adm_haz06": (-6, 6),
+}
 TARGET = "recovered_los"
 
 
@@ -68,7 +73,16 @@ def main():
     print("Missing fields:", missing_counts)
     print(f"Complete with original fields: {len(complete_original)}")
     print(f"Complete with revised fields: {len(complete_revised)}")
-    for field in ("adm_sex", "adm_oedema_YN", "adm_referral"):
+    # Audit the model's z-score inputs on the rows that have the seven shared fields.
+    for field, (lower, upper) in Z_SCORE_BOUNDS.items():
+        values = [row[field] for row in complete_original]
+        missing = sum(is_missing(value) for value in values)
+        flagged = sum(
+            not is_missing(value) and not lower <= Decimal(value) <= upper
+            for value in values
+        )
+        print(f"{field}: {missing} missing, {flagged} outside plausibility limits")
+    for field in ("adm_sex", "adm_oedema_YN", "adm_referral", "adm_category"):
         print(f"{field}: {dict(sorted(Counter(row[field] for row in cohort).items()))}")
     # Transfers overlap with recovery, so count both flags before choosing exclusions.
     transfers_by_outcome = Counter(

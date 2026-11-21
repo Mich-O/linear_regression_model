@@ -33,6 +33,16 @@ const admissionFields = [
     label: 'Weight-for-height z-score (optional)',
     kind: InputKind.decimal,
   ),
+  (
+    key: 'adm_waz06',
+    label: 'Weight-for-age z-score (optional)',
+    kind: InputKind.decimal,
+  ),
+  (
+    key: 'adm_haz06',
+    label: 'Height-for-age z-score (optional)',
+    kind: InputKind.decimal,
+  ),
   (key: 'adm_sex', label: 'Sex', kind: InputKind.text),
   (
     key: 'adm_oedema_YN',
@@ -40,6 +50,11 @@ const admissionFields = [
     kind: InputKind.wholeNumber,
   ),
   (key: 'adm_referral', label: 'Referral source', kind: InputKind.text),
+  (
+    key: 'adm_category',
+    label: 'Admission category (optional)',
+    kind: InputKind.wholeNumber,
+  ),
 ];
 
 class PredictionPage extends StatefulWidget {
@@ -70,7 +85,14 @@ class _PredictionPageState extends State<PredictionPage> {
     for (final field in admissionFields) {
       final value = _controllers[field.key]!.text.trim();
       if (value.isEmpty) {
-        if (field.key == 'adm_whz06') {
+        if (field.key == 'adm_category') {
+          // The earlier fields were parsed before the programme category.
+          final muac = admission['adm_muac'] as int;
+          final oedema = admission['adm_oedema_YN'] as int;
+          admission[field.key] = muac < 115 || oedema == 1 ? 1 : 2;
+          continue;
+        }
+        if (const {'adm_whz06', 'adm_waz06', 'adm_haz06'}.contains(field.key)) {
           admission[field.key] = null;
           continue;
         }
@@ -157,6 +179,8 @@ class _PredictionPageState extends State<PredictionPage> {
                       decoration: InputDecoration(
                         labelText: field.label,
                         helperText: switch (field.key) {
+                          'adm_category' =>
+                            'Leave blank to derive it from MUAC and oedema',
                           'adm_sex' => 'Female or Male',
                           'adm_referral' =>
                             'CHW - Relais, Family MUAC, Other, or Walk-in',
