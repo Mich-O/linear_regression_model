@@ -1,17 +1,14 @@
 """Serve the fitted Nara recovery-duration model."""
 
 import csv
-import os
 from hashlib import sha256
-from secrets import compare_digest
 from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import Annotated, Literal, Self
+from typing import Literal, Self
 
 import pandas as pd
-from fastapi import Depends, FastAPI, HTTPException, Request, UploadFile
+from fastapi import FastAPI, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.security import APIKeyHeader
 from joblib import load
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -20,7 +17,6 @@ from retrain import MAX_UPLOAD_BYTES, ModelStore, UpdateConflict, read_labelled_
 
 MODEL_PATH = Path(__file__).with_name("best_model.pkl")
 TRAINING_PATH = MODEL_PATH.with_name("training_rows.csv.gz")
-retrain_key = APIKeyHeader(name="X-Retrain-Key", auto_error=False)
 
 
 class Admission(BaseModel):
@@ -60,14 +56,6 @@ class Prediction(BaseModel):
     predicted_days: float
 
 
-def authorize_retraining(key: Annotated[str | None, Depends(retrain_key)]) -> None:
-    expected = os.environ.get("RETRAIN_API_KEY")
-    if not expected:
-        raise HTTPException(status_code=503, detail="Retraining key has not been configured.")
-    if not key or not compare_digest(key.encode(), expected.encode()):
-        raise HTTPException(status_code=401, detail="A valid retraining key is required.")
-
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     app.state.store = ModelStore(load(MODEL_PATH), pd.read_csv(TRAINING_PATH))
@@ -82,7 +70,7 @@ app = FastAPI(
 
 
 # Permit the local browser demo on its fixed port. Other websites cannot
-# make readable cross-origin calls. Swagger is same-origin and can send the update key.
+# make readable cross-origin calls. Swagger is served by the API itself.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:7357", "http://127.0.0.1:7357"],
@@ -97,7 +85,7 @@ def predict(admission: Admission, request: Request) -> Prediction:
     return Prediction(predicted_days=predict_one(request.app.state.store.model, admission.model_dump()))
 
 
-@app.post("/retrain", dependencies=[Depends(authorize_retraining)])
+@app.post("/retrain")
 def retrain(file: UploadFile, request: Request) -> dict[str, int]:
     content = file.file.read(MAX_UPLOAD_BYTES + 1)
     if len(content) > MAX_UPLOAD_BYTES:

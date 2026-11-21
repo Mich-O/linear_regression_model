@@ -85,6 +85,6 @@ The model uses the seven shared inputs, three growth z-scores, and the programme
 
 Run the notebook through **Export rows for the retraining demo** to generate `summative/data/retraining_batch.csv`. The repository's `summative/API/training_rows.csv.gz` comes from the same Zenodo dataset and license. Both files contain only eleven admission inputs and the measured duration after the notebook filters and splits the source. The demo file contains reserved historical cases and is kept locally.
 
-The deployed service uses a private `RETRAIN_API_KEY`. Maintain it in Render's environment settings and share it privately with authorized testers. In Swagger, use **Authorize** to enter the key. Prediction and Swagger are public. For a local-only rehearsal, start the API from `summative/API` with `RETRAIN_API_KEY=local-demo uv run --locked uvicorn prediction:app` and use `local-demo` in local Swagger.
+To rehearse locally, start the API from `summative/API` with `uv run --locked uvicorn prediction:app`. The prediction and retraining routes are accessible through Swagger.
 
 In Swagger, upload the demo file once to `POST /retrain`. On a fresh service, the response should show **2,006 uploaded rows** and **16,045 training rows**. Repeat the exact same `/predict` request and compare the full decimals. The service refits LinearRegression on the combined data and uses the updated pipeline immediately. The service rejects a repeat of the same file during that session. A restart loads the original saved pipeline and training rows.
