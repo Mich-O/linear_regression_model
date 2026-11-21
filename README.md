@@ -17,7 +17,7 @@ Data by Suvi T. Kangas, Bethany Marron, Zachary Tausanovitch, Elizabeth Radin, J
 
 ## YouTube demo
 
-Pending recording and upload.
+[Watch the project demo on YouTube](https://youtu.be/wAlAog4zdKU)
 
 ## Run the mobile app
 
