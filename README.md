@@ -7,13 +7,13 @@
 
 ## Dataset
 
-The Nara acute malnutrition treatment cohort contains 27,800 records with admission measurements and treatment outcomes. This project studies recovered health-centre cases. The duration is recorded in whole days and modeled as a quantitative elapsed duration.
+The Nara acute malnutrition treatment cohort contains 27,800 records from Mali. It pairs admission measurements with treatment outcomes. This project uses health-centre records for children discharged as recovered and estimates elapsed days from admission to that discharge.
 
 Data by Suvi T. Kangas, Bethany Marron, Zachary Tausanovitch, Elizabeth Radin, Josiane Andrianarisoa, Salimou Dembele, Césaire Ouedraogo, Issa Niamanto Coulibaly, Marie Biotteau, Bareye Ouologuem, Soumaila Daou, Fatoumata Traoré, Issiaka Traoré, Marc Nene, and Jeanette Bailey. [Zenodo dataset](https://doi.org/10.5281/zenodo.7343363) · [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) · [Companion study](https://doi.org/10.3390/nu14224923)
 
 ## Swagger UI
 
-[Open the public Swagger UI](https://nara-follow-up-api.onrender.com/docs) to try prediction and CSV retraining.
+[Open the public Swagger UI](https://nara-follow-up-api.onrender.com/docs) to try `POST /predict` or upload a labelled CSV to `POST /retrain`.
 
 ## YouTube demo
 
@@ -21,70 +21,71 @@ Pending recording and upload.
 
 ## Run the mobile app
 
-1. Install Flutter and the Android toolchain. Run `flutter doctor` to check the Android setup.
-2. Enable USB debugging on the phone, connect it, and accept the debugging prompt.
-3. From the repository root, open a terminal on the same system as your Flutter and Android SDKs. On Windows, build from a Windows folder. If your checkout is inside WSL, copy `summative/FlutterApp` to a Windows folder and run the Flutter commands there.
+1. Install the Flutter SDK and Android tooling. The project requires Dart 3.13.5 or later within the 3.x series. Use `flutter --version` to check your Dart version and `flutter doctor -v` to check the Android toolchain. If Android licenses are pending, run `flutter doctor --android-licenses`. [Flutter Android setup](https://docs.flutter.dev/platform-integration/android/setup)
+2. Start an Android emulator or connect a phone.
+
+   - **Emulator.** Open **Device Manager** in Android Studio. Create a virtual device if needed, then start it and wait for Android to boot.
+   - **Phone.** Enable USB debugging, connect and unlock the phone, and accept the debugging prompt. If the phone does not appear, check that the cable supports data.
+
+   Run `flutter devices` and copy the ID listed for your Android device or emulator.
+3. Get the app source. If you already have the repository on the same system as your Flutter and Android SDKs, open a terminal in `summative/FlutterApp`. With Windows SDKs and a WSL checkout, copy `summative/FlutterApp` to a Windows folder and open PowerShell in that copy, or clone the repository directly into a Windows folder.
+
+   To get a fresh copy, run:
 
    ```sh
-   cd summative/FlutterApp
-   flutter pub get
-   flutter devices
-   flutter run -d <device-id>
+   git clone https://github.com/Mich-O/linear_regression_model.git
+   cd linear_regression_model/summative/FlutterApp
    ```
 
-   In a standalone copy, start inside `FlutterApp` and skip the first command. Replace `<device-id>` with the ID printed for your Android phone.
+4. From the Flutter app directory, which contains `pubspec.yaml`, run the commands below. Replace `DEVICE_ID` with the Android device or emulator ID from step 2.
 
-4. Enter the sample values below and tap **Predict**. Expect about **39.5 days** with the saved model. Change age to **90** and tap **Predict** again to check that the app shows a readable validation error.
+   ```sh
+   flutter pub get
+   flutter run -d DEVICE_ID
+   ```
 
-| Label in the Android app | Key in Swagger | Sample value |
+5. Enter the admission details and tap **Predict**. The app calls the hosted API and needs an internet connection.
+
+### Enter admission details
+
+| App field | Swagger key | Format |
 | --- | --- | --- |
-| Age (months) | `adm_age` | `18` |
-| Weight (kg) | `adm_kg` | `7.2` |
-| Height or length (cm) | `adm_cm` | `73` |
-| Mid-upper arm circumference (mm) | `adm_muac` | `115` |
-| Weight-for-height z-score (optional) | `adm_whz06` | Leave blank in the app. Use `null` in Swagger. |
-| Weight-for-age z-score (optional) | `adm_waz06` | Leave blank in the app. Use `null` in Swagger. |
-| Height-for-age z-score (optional) | `adm_haz06` | Leave blank in the app. Use `null` in Swagger. |
-| Sex | `adm_sex` | `Female` |
-| Oedema (0 = no, 1 = yes) | `adm_oedema_YN` | `0` |
-| Referral source | `adm_referral` | `Family MUAC` |
-| Admission category (optional) | `adm_category` | Leave blank to calculate it in the app. Use `2` in Swagger for these inputs. |
+| Age | `adm_age` | Whole months |
+| Weight | `adm_kg` | Kilograms |
+| Height or length | `adm_cm` | Centimetres |
+| Mid-upper arm circumference (MUAC) | `adm_muac` | Whole millimetres |
+| Weight-for-height z-score | `adm_whz06` | Number if known |
+| Weight-for-age z-score | `adm_waz06` | Number if known |
+| Height-for-age z-score | `adm_haz06` | Number if known |
+| Sex | `adm_sex` | `Female` or `Male` |
+| Oedema | `adm_oedema_YN` | `0` for no or `1` for yes |
+| Referral source | `adm_referral` | `CHW - Relais`, `Family MUAC`, `Other`, or `Walk-in` |
+| Admission category | `adm_category` | `1` if MUAC is below 115 mm or oedema is present, otherwise `2` |
 
-Enter just the values on the phone. In Swagger, enter the keys and values as a JSON object. The admission category is 1 when MUAC is below 115 mm or oedema is present, and 2 otherwise.
+Leave unavailable z-scores blank in the app and send `null` for them in Swagger. The app calculates the admission category if you leave it blank. Include it explicitly in Swagger.
 
-## Reproduce the cohort audit
+## Reproduce the notebook
 
-1. Install [uv](https://docs.astral.sh/uv/getting-started/installation/).
-2. Download `Mali_Cohort_Study.csv` from Zenodo and place it in `summative/data/`. Git ignores that directory.
-3. From a terminal at the repository root, run:
+1. Install uv. Download `Mali_Cohort_Study.csv` from the dataset link above and place it in `summative/data/`, creating the folder if needed. [uv installation guide](https://docs.astral.sh/uv/getting-started/installation/)
+2. From the repository root, set up the locked Python environment and verify the downloaded CSV:
 
    ```sh
    cd summative
+   uv sync --locked
    uv run --locked python audit_cohort.py data/Mali_Cohort_Study.csv
    ```
 
-   You can also pass the path to your existing CSV. In WSL, quote a Windows download path such as `"/mnt/c/Users/yourname/Downloads/Mali_Cohort_Study.csv"`.
+3. Open [multivariate.ipynb](summative/linear_regression/multivariate.ipynb) in VS Code with the Python and Jupyter extensions. Select the Python kernel from `summative/.venv` and run the notebook from top to bottom.
 
-The audit verifies the published MD5 and prints aggregate counts. It reads the original data without writing a transformed CSV.
+The notebook documents cohort selection, missing-value handling, and model evaluation. Its final cells export the fitted pipeline, the original training rows, and a separate labelled CSV for trying retraining. The exports come from the same Zenodo data and license. Git ignores the original dataset and the separate retraining CSV.
 
-The original has 27,800 rows, 58 columns, and 27,800 unique anonymous IDs. The audit selects `adm_site = Health Center`, `cured = 1`, and positive `recovered_los`. It treats blanks, periods, and `NA` as missing for coverage checks, with no imputation. All 20,484 recovered health-centre records have positive whole-day durations, ranging from 10 to 112 days. The CSV lacks an admission date for a time-based split.
+## Run the API locally
 
-Height is missing in 427 of 20,484 recovered health-centre cases and 4,108 of 4,201 recovered ASC cases. Replacing the constant site field with `adm_whz06` reduces complete rows from 20,057 to 20,002. Height and z-score are the only candidate fields with missing values, at 427 and 482 respectively. Oedema is recorded in 18 cases. The smallest referral group, Other, has 608.
+From the repository root, start the API with the included model and training data:
 
-### Inpatient transfers
+```sh
+cd summative/API
+uv run --locked uvicorn prediction:app
+```
 
-The study followed cases that transferred to inpatient care until programme discharge. Median recorded duration was 70 days for the 590 recovered health-centre cases with a transfer and 35 days for the 19,894 without one. Both groups belong in the primary cohort because the estimate covers elapsed time through recovered discharge. Keep the transfer flag out of the inputs because it is recorded during treatment. Report errors by transfer status as a sensitivity check. Elapsed days alone cannot tell the coordinator how many outpatient visits to staff. [Companion study, section 2.6](https://www.mdpi.com/2072-6643/14/22/4923)
-
-In the earlier coverage check, 566 of the 20,002 rows with all seven shared inputs and WHZ had a transfer flag. The final modeling cohort keeps 20,057 rows and imputes missing z-scores.
-
-### Eleven admission inputs
-
-The model uses the seven shared inputs, three growth z-scores, and the programme admission category. The notebook compares eight and eleven inputs on the same five training-side folds. It treats z-scores outside the WHO/UNICEF plausibility limits as missing and fits imputation only on training rows. Z-scores can be omitted on the phone or sent as `null` in Swagger. [WHO/UNICEF anthropometry guidance](https://data.unicef.org/wp-content/uploads/2019/05/Anthropometry-children-under-5-guidance-English_2019.pdf)
-
-## Reproduce an API model update
-
-Run the notebook through **Export rows for the retraining demo** to generate `summative/data/retraining_batch.csv`. The repository's `summative/API/training_rows.csv.gz` comes from the same Zenodo dataset and license. Both files contain only eleven admission inputs and the measured duration after the notebook filters and splits the source. The demo file contains reserved historical cases and is kept locally.
-
-To rehearse locally, start the API from `summative/API` with `uv run --locked uvicorn prediction:app`. The prediction and retraining routes are accessible through Swagger.
-
-In Swagger, upload the demo file once to `POST /retrain`. On a fresh service, the response should show **2,006 uploaded rows** and **16,045 training rows**. Repeat the exact same `/predict` request and compare the full decimals. The service refits LinearRegression on the combined data and uses the updated pipeline immediately. The service rejects a repeat of the same file during that session. A restart loads the original saved pipeline and training rows.
+Open [local Swagger](http://127.0.0.1:8000/docs). To try a model update, run the notebook through its last cell, then upload `summative/data/retraining_batch.csv` to `POST /retrain`. The update lasts for the current server session. Restarting the server reloads the original model.
