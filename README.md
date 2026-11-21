@@ -74,3 +74,9 @@ Of the 20,002 complete rows, 566 had a transfer flag, leaving 19,436 in the subg
 ### Weight-for-height z-score
 
 Compare models with and without z-score on the same rows and splits. Confirm that coordinators can provide it at admission before making it a required input.
+
+## Reproduce an API model update
+
+Run the notebook through **Export rows for the retraining demo** to generate `summative/data/retraining_batch.csv`. The repository's `summative/API/training_rows.csv.gz` comes from the same Zenodo dataset and license. Both files contain only eight admission inputs and the measured duration after the notebook filters and splits the source. The demo file contains reserved historical cases and is kept locally.
+
+In Swagger, upload the demo file once to `POST /retrain`. On a fresh service, the response should show **2,006 uploaded rows** and **16,045 training rows**. Repeat the exact same `/predict` request and compare the full decimals. The service refits LinearRegression on the combined data and uses the updated pipeline immediately. A restart loads the original saved pipeline and training rows.
