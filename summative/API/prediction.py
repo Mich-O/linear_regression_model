@@ -7,6 +7,7 @@ from typing import Literal
 
 import pandas as pd
 from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
 from joblib import load
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -49,6 +50,17 @@ app = FastAPI(
     title="Nara Nutrition Follow-up",
     description="Estimates elapsed days to recovered discharge, conditional on recovery.",
     lifespan=lifespan,
+)
+
+
+# Permit the local browser demo on its fixed port. Other websites cannot
+# make readable cross-origin calls. Swagger is served by the API itself.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:7357", "http://127.0.0.1:7357"],
+    allow_methods=["POST"],
+    allow_headers=["Content-Type"],
+    allow_credentials=False,
 )
 
 
